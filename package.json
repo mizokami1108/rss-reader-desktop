@@ -16,7 +16,7 @@
     "electron": "electron .",
     "serve": "webpack serve --config webpack.renderer.config.js",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder",
+    "dist": "npm run build && electron-builder",
     "dist:win": "electron-builder --win",
     "dist:mac": "electron-builder --mac",
     "dist:linux": "electron-builder --linux",
