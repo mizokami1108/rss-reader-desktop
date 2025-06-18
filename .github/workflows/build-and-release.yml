@@ -34,13 +34,23 @@ jobs:
 
       - name: Verify build output
         run: |
-          echo "=== Checking dist directory structure ==="
-          find dist -type f -name "*.js" | head -20
-          echo "=== Checking if main.js exists ==="
-          ls -la dist/main/ || echo "dist/main directory not found"
-          ls -la dist/main/main.js || echo "main.js not found"
-          echo "=== Full dist directory structure ==="
-          tree dist || find dist -type f
+          echo "Checking if main entry point exists..."
+          node -e "
+          const fs = require('fs');
+          const pkg = require('./package.json');
+          const mainFile = pkg.main;
+          console.log('Expected main file:', mainFile);
+          console.log('Main file exists:', fs.existsSync(mainFile));
+          if (!fs.existsSync(mainFile)) {
+            console.log('Available files in dist:');
+            try {
+              const files = fs.readdirSync('dist', { recursive: true });
+              files.filter(f => f.endsWith('.js')).forEach(f => console.log('dist/' + f));
+            } catch (e) {
+              console.log('Error reading dist directory');
+            }
+          }
+          "
 
       - name: Build Electron app
         run: npm run dist
