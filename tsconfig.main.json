@@ -3,7 +3,7 @@
   "compilerOptions": {
     "target": "es2020",
     "module": "commonjs",
-    "outDir": "./dist/main",
+    "outDir": "./dist",
     "rootDir": "./src",
     "noEmit": false
   },
@@ -12,8 +12,6 @@
     "src/shared/**/*"
   ],
   "exclude": [
-    "src/renderer",
-    "node_modules",
-    "dist"
+    "src/renderer"
   ]
 }
