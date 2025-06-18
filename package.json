@@ -83,16 +83,13 @@
       }
     ],
     "win": {
-      "target": "nsis",
-      "icon": "src/assets/icon.ico"
+      "target": "nsis"
     },
     "mac": {
-      "target": "dmg",
-      "icon": "src/assets/icon.icns"
+      "target": "dmg"
     },
     "linux": {
-      "target": "AppImage",
-      "icon": "src/assets/icon.png"
+      "target": "AppImage"
     },
     "nsis": {
       "oneClick": false,
