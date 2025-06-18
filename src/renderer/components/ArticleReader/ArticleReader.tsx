@@ -28,9 +28,15 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onBack }) => {
     await toggleFavorite(article.id);
   };
 
-  const handleOpenExternal = () => {
+  const handleOpenExternal = async () => {
     if (article.url) {
-      window.open(article.url, '_blank');
+      try {
+        await window.electronAPI.openExternalLink(article.url);
+      } catch (error) {
+        console.error('Failed to open external link:', error);
+        // フォールバック: 従来の方法で開く
+        window.open(article.url, '_blank');
+      }
     }
   };
 

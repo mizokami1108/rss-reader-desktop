@@ -50,6 +50,25 @@ export interface ElectronAPI {
   
   getAutoViewerSpeed: () => Promise<number>;
   setAutoViewerSpeed: (speed: number) => Promise<void>;
+  
+  openExternalLink: (url: string) => Promise<void>;
+  
+  onFeedProgress: (callback: (data: FeedProgressData) => void) => () => void;
+  onRefreshProgress: (callback: (data: RefreshProgressData) => void) => () => void;
+}
+
+export interface FeedProgressData {
+  step: 'fetching' | 'creating' | 'importing' | 'finalizing' | 'completed' | 'error';
+  message: string;
+  progress: number;
+}
+
+export interface RefreshProgressData {
+  step: 'starting' | 'updating' | 'completed' | 'error';
+  message: string;
+  progress: number;
+  current: number;
+  total: number;
 }
 
 declare global {

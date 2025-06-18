@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -13,8 +13,11 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  LinearProgress,
+  Typography,
 } from '@mui/material';
 import { useFeed } from '../../contexts/FeedContext';
+import { FeedProgressData } from '../../../shared/types';
 
 interface FeedManagerProps {
   open: boolean;
@@ -27,8 +30,34 @@ const FeedManager: React.FC<FeedManagerProps> = ({ open, onClose }) => {
   const [category, setCategory] = useState('General');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [progress, setProgress] = useState<FeedProgressData | null>(null);
   
   const { addFeed, categories } = useFeed();
+
+  // プログレス監視
+  useEffect(() => {
+    if (!open) return;
+
+    const unsubscribe = window.electronAPI.onFeedProgress((data: FeedProgressData) => {
+      setProgress(data);
+      
+      if (data.step === 'completed') {
+        setTimeout(() => {
+          setProgress(null);
+          setLoading(false);
+          handleClose();
+        }, 1500);
+      } else if (data.step === 'error') {
+        setError(data.message);
+        setProgress(null);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +85,7 @@ const FeedManager: React.FC<FeedManagerProps> = ({ open, onClose }) => {
     setCategory('General');
     setError('');
     setLoading(false);
+    setProgress(null);
     onClose();
   };
 
@@ -73,6 +103,28 @@ const FeedManager: React.FC<FeedManagerProps> = ({ open, onClose }) => {
                 {error}
               </Alert>
             )}
+
+            {progress && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary' }}>
+                  {progress.message}
+                </Typography>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={progress.progress} 
+                  sx={{ 
+                    height: 8, 
+                    borderRadius: 4,
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 4,
+                    }
+                  }} 
+                />
+                <Typography variant="caption" sx={{ mt: 0.5, display: 'block', textAlign: 'center' }}>
+                  {progress.progress}%
+                </Typography>
+              </Box>
+            )}
             
             <TextField
               label="RSSフィードURL"
@@ -80,7 +132,7 @@ const FeedManager: React.FC<FeedManagerProps> = ({ open, onClose }) => {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com/rss"
               required
-              disabled={loading}
+              disabled={loading || !!progress}
               size="small"
               InputLabelProps={{ style: { fontSize: '0.875rem' } }}
               InputProps={{ style: { fontSize: '0.875rem' } }}
@@ -91,7 +143,7 @@ const FeedManager: React.FC<FeedManagerProps> = ({ open, onClose }) => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="空欄の場合は自動検出されます"
-              disabled={loading}
+              disabled={loading || !!progress}
               size="small"
               InputLabelProps={{ style: { fontSize: '0.875rem' } }}
               InputProps={{ style: { fontSize: '0.875rem' } }}
@@ -117,7 +169,7 @@ const FeedManager: React.FC<FeedManagerProps> = ({ open, onClose }) => {
               label="新しいカテゴリを作成"
               placeholder="新しいカテゴリ名を入力"
               onChange={(e) => setCategory(e.target.value)}
-              disabled={loading}
+              disabled={loading || !!progress}
               size="small"
               InputLabelProps={{ style: { fontSize: '0.875rem' } }}
               InputProps={{ style: { fontSize: '0.875rem' } }}

@@ -22,7 +22,18 @@ interface ArticleListProps {
 const ArticleList: React.FC<ArticleListProps> = ({ onArticleSelect }) => {
   const { articles, favorites, loading, selectedCategory, selectedFeed, toggleFavorite } = useFeed();
 
-  const displayArticles = selectedCategory === 'favorites' ? favorites : articles;
+  // 記事を日付順（新しい順）でソート
+  const sortArticlesByDate = (articles: Article[]) => {
+    return [...articles].sort((a, b) => {
+      const dateA = new Date(a.publishedAt || a.createdAt).getTime();
+      const dateB = new Date(b.publishedAt || b.createdAt).getTime();
+      return dateB - dateA; // 新しい順（降順）
+    });
+  };
+
+  const displayArticles = selectedCategory === 'favorites' 
+    ? sortArticlesByDate(favorites) 
+    : sortArticlesByDate(articles);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

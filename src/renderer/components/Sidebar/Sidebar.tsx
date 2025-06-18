@@ -25,11 +25,13 @@ import {
   ExpandLess,
   ExpandMore,
   Delete,
+  Edit,
   Slideshow,
 } from '@mui/icons-material';
 import { useFeed } from '../../contexts/FeedContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import FeedManager from '../FeedManager/FeedManager';
+import FeedEditor from '../FeedEditor/FeedEditor';
 
 interface SidebarProps {
   onStartAutoViewer?: () => void;
@@ -49,6 +51,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onStartAutoViewer }) => {
   const { mode, toggleTheme } = useTheme();
   
   const [feedManagerOpen, setFeedManagerOpen] = useState(false);
+  const [feedEditorOpen, setFeedEditorOpen] = useState(false);
+  const [editingFeed, setEditingFeed] = useState<typeof feeds[0] | null>(null);
   const [categoriesExpanded, setCategoriesExpanded] = useState(true);
   const [feedsExpanded, setFeedsExpanded] = useState(true);
 
@@ -57,6 +61,17 @@ const Sidebar: React.FC<SidebarProps> = ({ onStartAutoViewer }) => {
     if (window.confirm('このフィードを削除してもよろしいですか？')) {
       await deleteFeed(feedId);
     }
+  };
+
+  const handleEditFeed = (feed: typeof feeds[0], event: React.MouseEvent) => {
+    event.stopPropagation();
+    setEditingFeed(feed);
+    setFeedEditorOpen(true);
+  };
+
+  const handleCloseEditor = () => {
+    setFeedEditorOpen(false);
+    setEditingFeed(null);
   };
 
   return (
@@ -194,13 +209,24 @@ const Sidebar: React.FC<SidebarProps> = ({ onStartAutoViewer }) => {
                       }}
                       secondaryTypographyProps={{ fontSize: '0.6875rem' }}
                     />
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleDeleteFeed(feed.id, e)}
-                      sx={{ ml: 1, opacity: 0.6 }}
-                    >
-                      <Delete fontSize="small" />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', ml: 1 }}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleEditFeed(feed, e)}
+                        sx={{ opacity: 0.6, mr: 0.5 }}
+                        title="フィードを編集"
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleDeleteFeed(feed.id, e)}
+                        sx={{ opacity: 0.6 }}
+                        title="フィードを削除"
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Box>
                   </ListItemButton>
                 </ListItem>
               ))}
@@ -224,6 +250,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onStartAutoViewer }) => {
       <FeedManager
         open={feedManagerOpen}
         onClose={() => setFeedManagerOpen(false)}
+      />
+
+      <FeedEditor
+        open={feedEditorOpen}
+        onClose={handleCloseEditor}
+        feed={editingFeed}
       />
     </>
   );

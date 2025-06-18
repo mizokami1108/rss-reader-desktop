@@ -23,7 +23,7 @@ import {
   Refresh,
   OpenInNew,
 } from '@mui/icons-material';
-import { Article } from '../../../shared/types';
+import { Article, RefreshProgressData } from '../../../shared/types';
 import { useFeed } from '../../contexts/FeedContext';
 
 interface AutoViewerProps {
@@ -40,6 +40,7 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
   const [progress, setProgress] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState('');
+  const [refreshProgress, setRefreshProgress] = useState<RefreshProgressData | null>(null);
   const [showArticle, setShowArticle] = useState(true);
 
   const { refreshAllFeeds } = useFeed();
@@ -109,26 +110,20 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
     setIsRefreshing(true);
     setIsPlaying(false);
     setRefreshMessage('フィードを更新中...');
+    setRefreshProgress(null);
 
     try {
-      // 直接electronAPIを呼び出してRSSフィードを更新
+      // 直接electronAPIを呼び出してRSSフィードを更新（プログレス付き）
       await window.electronAPI.refreshAllFeeds();
       
       // FeedContextのrefreshAllFeedsも呼び出してUIを更新
       await refreshAllFeeds();
       
-      setRefreshMessage('✨ 最新化しました');
-      
-      setTimeout(() => {
-        setIsRefreshing(false);
-        setRefreshMessage('');
-        setCurrentIndex(0);
-        setProgress(0);
-        setIsPlaying(true);
-      }, 1500);
+      // プログレス監視のuseEffectで完了処理が行われるため、ここでは何もしない
     } catch (error) {
       console.error('RSS更新エラー:', error);
       setRefreshMessage('❌ 更新に失敗しました');
+      setRefreshProgress(null);
       setTimeout(() => {
         setIsRefreshing(false);
         setRefreshMessage('');
@@ -189,6 +184,43 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
     if (open) {
       loadSettings();
     }
+  }, [open]);
+
+  // プログレス監視
+  useEffect(() => {
+    if (!open) return;
+
+    const unsubscribe = window.electronAPI.onRefreshProgress((data: RefreshProgressData) => {
+      setRefreshProgress(data);
+      
+      if (data.step === 'completed') {
+        setRefreshMessage(data.message);
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setRefreshMessage('');
+          setRefreshProgress(null);
+          setCurrentIndex(0);
+          setProgress(0);
+          setIsPlaying(true);
+        }, 2000);
+      } else if (data.step === 'error') {
+        setRefreshMessage('❌ 更新に失敗しました');
+        setRefreshProgress(null);
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setRefreshMessage('');
+          setCurrentIndex(0);
+          setProgress(0);
+          setIsPlaying(true);
+        }, 2500);
+      } else {
+        setRefreshMessage(data.message);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [open]);
 
   // 初期化
@@ -456,9 +488,15 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
 
                   <Button
                     variant="outlined"
-                    href={currentArticle.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={async () => {
+                      try {
+                        await window.electronAPI.openExternalLink(currentArticle.url);
+                      } catch (error) {
+                        console.error('Failed to open external link:', error);
+                        // フォールバック: 従来の方法で開く
+                        window.open(currentArticle.url, '_blank');
+                      }
+                    }}
                     startIcon={<OpenInNew />}
                     sx={{ fontWeight: 500 }}
                   >
@@ -487,23 +525,47 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
                 zIndex: 10001,
               }}
             >
-              <Box sx={{ mb: 2 }}>
-                <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    border: '3px solid rgba(255,255,255,0.3)',
-                    borderTop: '3px solid #9f7aea',
-                    borderRadius: '50%',
-                    animation: 'spin 1s linear infinite',
-                    margin: '0 auto',
-                    '@keyframes spin': {
-                      '0%': { transform: 'rotate(0deg)' },
-                      '100%': { transform: 'rotate(360deg)' },
-                    },
-                  }}
-                />
-              </Box>
+              {refreshProgress ? (
+                <Box sx={{ mb: 2, minWidth: 250 }}>
+                  <Typography variant="body2" sx={{ mb: 1 }}>
+                    {refreshProgress.message}
+                  </Typography>
+                  <LinearProgress 
+                    variant="determinate" 
+                    value={refreshProgress.progress} 
+                    sx={{ 
+                      height: 6, 
+                      borderRadius: 3,
+                      backgroundColor: 'rgba(255,255,255,0.3)',
+                      '& .MuiLinearProgress-bar': {
+                        borderRadius: 3,
+                        backgroundColor: '#9f7aea',
+                      }
+                    }} 
+                  />
+                  <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
+                    {refreshProgress.current}/{refreshProgress.total} フィード ({refreshProgress.progress}%)
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ mb: 2 }}>
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      border: '3px solid rgba(255,255,255,0.3)',
+                      borderTop: '3px solid #9f7aea',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite',
+                      margin: '0 auto',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' },
+                      },
+                    }}
+                  />
+                </Box>
+              )}
               <Typography variant="body1">{refreshMessage}</Typography>
             </Paper>
           )}
