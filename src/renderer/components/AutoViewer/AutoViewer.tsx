@@ -108,11 +108,16 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
   const performAutoRefresh = async () => {
     setIsRefreshing(true);
     setIsPlaying(false);
-    setRefreshMessage('新しい記事を取得中...');
+    setRefreshMessage('フィードを更新中...');
 
     try {
+      // 直接electronAPIを呼び出してRSSフィードを更新
+      await window.electronAPI.refreshAllFeeds();
+      
+      // FeedContextのrefreshAllFeedsも呼び出してUIを更新
       await refreshAllFeeds();
-      setRefreshMessage('✨ 新しい記事を取得しました！');
+      
+      setRefreshMessage('✨ 最新化しました');
       
       setTimeout(() => {
         setIsRefreshing(false);
@@ -120,8 +125,9 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
         setCurrentIndex(0);
         setProgress(0);
         setIsPlaying(true);
-      }, 2000);
+      }, 1500);
     } catch (error) {
+      console.error('RSS更新エラー:', error);
       setRefreshMessage('❌ 更新に失敗しました');
       setTimeout(() => {
         setIsRefreshing(false);
@@ -129,7 +135,7 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
         setCurrentIndex(0);
         setProgress(0);
         setIsPlaying(true);
-      }, 3000);
+      }, 2500);
     }
   };
 
@@ -161,6 +167,29 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, togglePlayPause, previousArticle, nextArticle, onClose]);
+
+  // 設定の読み込み
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        console.log('🔍 AutoViewer: 設定読み込み開始');
+        console.log('Available electronAPI methods:', Object.keys(window.electronAPI || {}));
+        if (window.electronAPI && window.electronAPI.getAutoViewerSpeed) {
+          const savedSpeed = await window.electronAPI.getAutoViewerSpeed();
+          console.log('✅ 保存された速度設定:', savedSpeed);
+          setSpeed(savedSpeed);
+        } else {
+          console.warn('⚠️ getAutoViewerSpeed method not available, using default speed');
+        }
+      } catch (error) {
+        console.error('❌ Auto Viewer設定の読み込みに失敗:', error);
+      }
+    };
+    
+    if (open) {
+      loadSettings();
+    }
+  }, [open]);
 
   // 初期化
   useEffect(() => {
@@ -258,7 +287,63 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
             <FormControl size="small">
               <Select
                 value={speed}
-                onChange={(e) => setSpeed(Number(e.target.value))}
+                onChange={async (e) => {
+                  const newSpeed = Number(e.target.value);
+                  setSpeed(newSpeed);
+                  try {
+                    if (window.electronAPI && window.electronAPI.setAutoViewerSpeed) {
+                      await window.electronAPI.setAutoViewerSpeed(newSpeed);
+                    } else {
+                      console.warn('setAutoViewerSpeed method not available');
+                    }
+                  } catch (error) {
+                    console.error('Auto Viewer設定の保存に失敗:', error);
+                  }
+                }}
+                MenuProps={{
+                  disablePortal: false,
+                  container: document.body,
+                  PaperProps: {
+                    sx: {
+                      bgcolor: 'rgba(0,0,0,0.95)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: 2,
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                      zIndex: '99999 !important',
+                      position: 'fixed',
+                      maxHeight: 200,
+                      '& .MuiMenuItem-root': {
+                        color: 'white',
+                        fontSize: '0.875rem',
+                        padding: '8px 16px',
+                        minHeight: 'auto',
+                        '&:hover': {
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                        },
+                        '&.Mui-selected': {
+                          backgroundColor: 'rgba(159,122,234,0.3)',
+                          '&:hover': {
+                            backgroundColor: 'rgba(159,122,234,0.4)',
+                          },
+                        },
+                      },
+                    },
+                  },
+                  anchorOrigin: {
+                    vertical: 'bottom',
+                    horizontal: 'left',
+                  },
+                  transformOrigin: {
+                    vertical: 'top',
+                    horizontal: 'left',
+                  },
+                  slotProps: {
+                    root: {
+                      style: { zIndex: 99999 }
+                    }
+                  }
+                }}
                 sx={{
                   color: 'white',
                   '& .MuiOutlinedInput-notchedOutline': {
@@ -266,6 +351,12 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
                   },
                   '& .MuiSvgIcon-root': {
                     color: 'white',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255,255,255,0.5)',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#9f7aea',
                   },
                 }}
               >

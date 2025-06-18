@@ -2,6 +2,10 @@ import Parser from 'rss-parser';
 import { feedQueries, articleQueries } from '../database/queries';
 
 const parser = new Parser({
+  timeout: 10000,
+  headers: {
+    'User-Agent': 'RSS Reader Desktop/1.0.0 (compatible; RSS Parser)'
+  },
   customFields: {
     feed: ['description', 'language'],
     item: ['summary', 'content:encoded', 'content'],
@@ -29,22 +33,42 @@ export const fetchRSSFeed = async (url: string) => {
     console.error('Error fetching RSS feed:', error);
     
     if (error instanceof Error) {
+      // Network connectivity errors
       if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
         throw new Error('URLにアクセスできません。インターネット接続とURLを確認してください。');
-      } else if (error.message.includes('CERT') || error.message.includes('SSL')) {
+      } 
+      // SSL/TLS certificate errors
+      else if (error.message.includes('CERT') || error.message.includes('SSL') || error.message.includes('DEPTH_ZERO_SELF_SIGNED')) {
         throw new Error('SSL証明書に問題があります。サイトの安全性を確認してください。');
-      } else if (error.message.includes('timeout')) {
+      } 
+      // Timeout errors
+      else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
         throw new Error('接続がタイムアウトしました。しばらくしてから再試行してください。');
-      } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
-        throw new Error('このRSSフィードへのアクセスが拒否されました。');
-      } else if (error.message.includes('404') || error.message.includes('Not Found')) {
+      } 
+      // HTTP status errors
+      else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+        throw new Error('このRSSフィードへのアクセスが拒否されました。User-Agentやアクセス許可を確認してください。');
+      } 
+      else if (error.message.includes('404') || error.message.includes('Not Found')) {
         throw new Error('RSSフィードが見つかりません。URLが正しいか確認してください。');
-      } else if (error.message.includes('parse') || error.message.includes('XML')) {
+      }
+      else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        throw new Error('認証が必要なRSSフィードです。認証情報を確認してください。');
+      }
+      else if (error.message.includes('500') || error.message.includes('502') || error.message.includes('503')) {
+        throw new Error('RSSフィードのサーバーに問題があります。しばらくしてから再試行してください。');
+      }
+      // XML/RSS parsing errors
+      else if (error.message.includes('parse') || error.message.includes('XML') || error.message.includes('Invalid')) {
         throw new Error('RSSフィードの形式が正しくありません。有効なRSSフィードか確認してください。');
+      }
+      // Rate limiting
+      else if (error.message.includes('429') || error.message.includes('Too Many Requests')) {
+        throw new Error('リクエスト数が多すぎます。しばらく時間をおいてから再試行してください。');
       }
     }
     
-    throw new Error('RSSフィードの取得に失敗しました。URLが正しいか確認してください。');
+    throw new Error(`RSSフィードの取得に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

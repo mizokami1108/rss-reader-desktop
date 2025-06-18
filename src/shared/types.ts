@@ -43,10 +43,13 @@ export interface ElectronAPI {
   getFavorites: () => Promise<Article[]>;
   
   fetchRSSFeed: (url: string) => Promise<Article[]>;
-  refreshAllFeeds: () => Promise<void>;
+  refreshAllFeeds: () => Promise<Array<{feedId: number; articleCount?: number; success: boolean; error?: string}>>;
   
   setTheme: (theme: 'light' | 'dark') => Promise<void>;
   getTheme: () => Promise<'light' | 'dark'>;
+  
+  getAutoViewerSpeed: () => Promise<number>;
+  setAutoViewerSpeed: (speed: number) => Promise<void>;
 }
 
 declare global {

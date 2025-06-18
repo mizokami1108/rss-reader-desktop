@@ -88,4 +88,13 @@ export const setupIpcHandlers = () => {
   ipcMain.handle('theme:set', (event, theme: string) => {
     settingsQueries.set('theme', theme);
   });
+
+  // Auto Viewer settings operations
+  ipcMain.handle('autoviewer:getSpeed', () => {
+    return Number(settingsQueries.get('autoviewer_speed')) || 5000;
+  });
+
+  ipcMain.handle('autoviewer:setSpeed', (event, speed: number) => {
+    settingsQueries.set('autoviewer_speed', speed.toString());
+  });
 };
