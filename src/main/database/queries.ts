@@ -90,6 +90,7 @@ export const articleQueries = {
         a.description, 
         a.content, 
         a.url, 
+        a.image_url as imageUrl,
         a.published_at as publishedAt, 
         a.created_at as createdAt,
         f.title as feedTitle, 
@@ -132,6 +133,7 @@ export const articleQueries = {
         a.description, 
         a.content, 
         a.url, 
+        a.image_url as imageUrl,
         a.published_at as publishedAt, 
         a.created_at as createdAt,
         f.title as feedTitle, 
@@ -145,12 +147,12 @@ export const articleQueries = {
     return stmt.get(id) as Article | undefined;
   },
 
-  create: (feedId: number, title: string, description: string, content: string, url: string, publishedAt?: string) => {
+  create: (feedId: number, title: string, description: string, content: string, url: string, publishedAt?: string, imageUrl?: string | null) => {
     const stmt = db.prepare(`
-      INSERT OR IGNORE INTO articles (feed_id, title, description, content, url, published_at)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO articles (feed_id, title, description, content, url, published_at, image_url)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(feedId, title, description, content, url, publishedAt);
+    const result = stmt.run(feedId, title, description, content, url, publishedAt, imageUrl);
     return result.lastInsertRowid as number;
   },
 
@@ -170,6 +172,7 @@ export const favoriteQueries = {
         a.description, 
         a.content, 
         a.url, 
+        a.image_url as imageUrl,
         a.published_at as publishedAt, 
         a.created_at as createdAt,
         f.title as feedTitle, 

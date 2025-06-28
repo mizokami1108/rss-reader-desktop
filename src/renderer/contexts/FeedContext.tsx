@@ -13,6 +13,7 @@ interface FeedContextType {
   refreshFeeds: () => Promise<void>;
   addFeed: (url: string, title: string, category: string) => Promise<void>;
   deleteFeed: (id: number) => Promise<void>;
+  updateFeed: (id: number, data: Partial<RSSFeed>) => Promise<void>;
   selectCategory: (category: string | null) => void;
   selectFeed: (feedId: number | null) => void;
   toggleFavorite: (articleId: number) => Promise<void>;
@@ -112,6 +113,17 @@ export const FeedContextProvider: React.FC<FeedContextProviderProps> = ({ childr
     }
   };
 
+  const updateFeed = async (id: number, data: Partial<RSSFeed>) => {
+    try {
+      await window.electronAPI.updateFeed(id, data);
+      await refreshFeeds();
+      await refreshArticles();
+    } catch (error) {
+      console.error('Failed to update feed:', error);
+      throw error;
+    }
+  };
+
   const selectCategory = (category: string | null) => {
     setSelectedCategory(category);
     setSelectedFeed(null);
@@ -169,6 +181,7 @@ export const FeedContextProvider: React.FC<FeedContextProviderProps> = ({ childr
         refreshFeeds,
         addFeed,
         deleteFeed,
+        updateFeed,
         selectCategory,
         selectFeed,
         toggleFavorite,

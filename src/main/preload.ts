@@ -23,4 +23,21 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Theme operations
   setTheme: (theme: 'light' | 'dark') => ipcRenderer.invoke('theme:set', theme),
   getTheme: () => ipcRenderer.invoke('theme:get'),
+  
+  // Auto Viewer settings operations
+  getAutoViewerSpeed: () => ipcRenderer.invoke('autoviewer:getSpeed'),
+  setAutoViewerSpeed: (speed: number) => ipcRenderer.invoke('autoviewer:setSpeed', speed),
+  
+  // External link operations
+  openExternalLink: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
+  
+  // Progress monitoring
+  onFeedProgress: (callback: (data: any) => void) => {
+    ipcRenderer.on('feed:progress', (event, data) => callback(data));
+    return () => ipcRenderer.removeAllListeners('feed:progress');
+  },
+  onRefreshProgress: (callback: (data: any) => void) => {
+    ipcRenderer.on('refresh:progress', (event, data) => callback(data));
+    return () => ipcRenderer.removeAllListeners('refresh:progress');
+  },
 });

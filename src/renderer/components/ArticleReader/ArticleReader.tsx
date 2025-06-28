@@ -28,9 +28,15 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onBack }) => {
     await toggleFavorite(article.id);
   };
 
-  const handleOpenExternal = () => {
+  const handleOpenExternal = async () => {
     if (article.url) {
-      window.open(article.url, '_blank');
+      try {
+        await window.electronAPI.openExternalLink(article.url);
+      } catch (error) {
+        console.error('Failed to open external link:', error);
+        // フォールバック: 従来の方法で開く
+        window.open(article.url, '_blank');
+      }
     }
   };
 
@@ -51,17 +57,41 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onBack }) => {
   const cleanContent = (content: string) => {
     if (!content) return '';
     
-    // Basic HTML cleaning - in a real app, you'd want to use a proper sanitizer
-    return content
+    // Basic HTML cleaning while preserving line breaks
+    let cleaned = content
+      // Remove script and style tags
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+      // Convert common block elements to newlines
+      .replace(/<\/?(p|div|br|h[1-6]|li|blockquote|pre)\b[^>]*>/gi, '\n')
+      // Convert list items to bullet points
+      .replace(/<li\b[^>]*>(.*?)<\/li>/gi, '• $1\n')
+      // Remove remaining HTML tags
+      .replace(/<[^>]+>/g, '')
+      // Decode common HTML entities
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      // Clean up excessive whitespace but preserve single line breaks
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n\s*\n/g, '\n\n')
+      .replace(/^\s+|\s+$/g, '')
+      // Ensure paragraphs are separated
+      .replace(/\n{3,}/g, '\n\n');
+    
+    return cleaned;
   };
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ 
+      height: 'calc(100vh - 48px)', // ツールバーの高さ(48px)を引く
+      display: 'flex', 
+      flexDirection: 'column',
+      overflow: 'hidden' // 親コンテナがオーバーフローしないように
+    }}>
       <Box
         sx={{
           display: 'flex',
@@ -96,7 +126,31 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onBack }) => {
         </Button>
       </Box>
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 3 }}>
+      <Box 
+        sx={{ 
+          flex: 1, 
+          overflow: 'auto', 
+          p: 3,
+          // カスタムスクロールバー
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'rgba(0,0,0,0.05)',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'rgba(0,0,0,0.2)',
+            borderRadius: '4px',
+            '&:hover': {
+              background: 'rgba(0,0,0,0.3)',
+            },
+          },
+          '&::-webkit-scrollbar-thumb:active': {
+            background: 'rgba(0,0,0,0.4)',
+          },
+        }}
+      >
         <Paper elevation={0} sx={{ maxWidth: 800, mx: 'auto' }}>
           <Box sx={{ mb: 3 }}>
             <Typography
@@ -111,6 +165,39 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onBack }) => {
             >
               {article.title}
             </Typography>
+
+            {article.imageUrl && (
+              <Box
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  overflow: 'hidden',
+                  backgroundColor: 'grey.100',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  maxHeight: 400,
+                }}
+              >
+                <img
+                  src={article.imageUrl}
+                  alt={article.title}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    maxHeight: 400,
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement!.style.backgroundColor = '#f5f5f5';
+                    target.parentElement!.style.height = '200px';
+                    target.parentElement!.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 1rem;">画像の読み込みに失敗しました</div>';
+                  }}
+                />
+              </Box>
+            )}
 
             <Box
               sx={{
@@ -168,10 +255,14 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onBack }) => {
             {article.content ? (
               <div
                 style={{
-                  fontSize: '0.9375rem',
-                  lineHeight: 1.6,
+                  fontSize: '1rem',
+                  lineHeight: 1.8,
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
+                  color: '#333',
+                  letterSpacing: '0.02em',
+                  textAlign: 'justify',
+                  marginBottom: '1rem',
                 }}
               >
                 {cleanContent(article.content)}
@@ -180,7 +271,17 @@ const ArticleReader: React.FC<ArticleReaderProps> = ({ article, onBack }) => {
               <Typography
                 variant="body1"
                 color="text.secondary"
-                sx={{ fontSize: '0.9375rem', fontStyle: 'italic' }}
+                sx={{ 
+                  fontSize: '1rem', 
+                  fontStyle: 'italic',
+                  lineHeight: 1.6,
+                  padding: 3,
+                  backgroundColor: 'grey.50',
+                  borderRadius: 2,
+                  border: '1px dashed',
+                  borderColor: 'grey.300',
+                  textAlign: 'center'
+                }}
               >
                 コンテンツがありません。完全な記事を読むには「元記事を開く」をクリックしてください。
               </Typography>
