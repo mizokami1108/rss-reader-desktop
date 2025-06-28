@@ -8,9 +8,42 @@ const parser = new Parser({
   },
   customFields: {
     feed: ['description', 'language'],
-    item: ['summary', 'content:encoded', 'content'],
+    item: ['summary', 'content:encoded', 'content', 'media:thumbnail', 'media:content', 'enclosure'],
   },
 });
+
+// 画像URLを抽出する関数
+const extractImageUrl = (item: any): string | null => {
+  // 1. media:thumbnail から取得
+  if (item['media:thumbnail'] && item['media:thumbnail'].$ && item['media:thumbnail'].$.url) {
+    return item['media:thumbnail'].$.url;
+  }
+  
+  // 2. media:content から取得
+  if (item['media:content'] && Array.isArray(item['media:content'])) {
+    for (const media of item['media:content']) {
+      if (media.$ && media.$.type && media.$.type.startsWith('image/') && media.$.url) {
+        return media.$.url;
+      }
+    }
+  }
+  
+  // 3. enclosure から取得
+  if (item.enclosure && item.enclosure.type && item.enclosure.type.startsWith('image/') && item.enclosure.url) {
+    return item.enclosure.url;
+  }
+  
+  // 4. コンテンツ内の最初の画像を抽出
+  const content = item['content:encoded'] || item.content || item.summary || '';
+  if (typeof content === 'string') {
+    const imgMatch = content.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+    if (imgMatch && imgMatch[1]) {
+      return imgMatch[1];
+    }
+  }
+  
+  return null;
+};
 
 export const fetchRSSFeed = async (url: string) => {
   try {
@@ -22,6 +55,7 @@ export const fetchRSSFeed = async (url: string) => {
       content: item['content:encoded'] || item.content || item.contentSnippet || '',
       url: item.link || '',
       publishedAt: item.pubDate || item.isoDate || new Date().toISOString(),
+      imageUrl: extractImageUrl(item),
     }));
 
     return {
@@ -89,7 +123,8 @@ export const refreshFeed = async (feedId: number) => {
           article.description,
           article.content,
           article.url,
-          article.publishedAt
+          article.publishedAt,
+          article.imageUrl
         );
       } catch (error) {
         // Article might already exist, which is fine

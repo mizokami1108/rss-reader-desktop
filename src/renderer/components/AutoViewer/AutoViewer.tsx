@@ -264,21 +264,24 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
           sx={{
             background: 'rgba(0,0,0,0.3)',
             backdropFilter: 'blur(10px)',
-            p: 2,
+            px: 2,
+            py: 1,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            minHeight: '60px',
           }}
         >
-          <Typography variant="h6" sx={{ color: 'white', fontWeight: 600 }}>
+          <Typography variant="subtitle1" sx={{ color: 'white', fontWeight: 600, fontSize: '1rem' }}>
             📰 Auto RSS Viewer
           </Typography>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {/* 自動更新トグル */}
             <FormControlLabel
               control={
                 <Switch
+                  size="small"
                   checked={autoRefreshEnabled}
                   onChange={(e) => setAutoRefreshEnabled(e.target.checked)}
                   sx={{
@@ -292,31 +295,36 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
                 />
               }
               label={
-                <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.875rem' }}>
+                <Typography sx={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.75rem' }}>
                   自動更新
                 </Typography>
               }
+              sx={{ mr: 0 }}
             />
 
             {/* プレイ/ポーズ */}
             <Button
               variant="outlined"
+              size="small"
               onClick={togglePlayPause}
               sx={{
                 color: 'white',
                 borderColor: 'rgba(255,255,255,0.3)',
                 backgroundColor: isPlaying ? 'transparent' : '#9f7aea',
+                fontSize: '0.75rem',
+                minWidth: '80px',
+                py: 0.5,
                 '&:hover': {
                   backgroundColor: 'rgba(255,255,255,0.1)',
                 },
               }}
-              startIcon={isPlaying ? <Pause /> : <PlayArrow />}
+              startIcon={isPlaying ? <Pause sx={{ fontSize: '1rem' }} /> : <PlayArrow sx={{ fontSize: '1rem' }} />}
             >
-              {isPlaying ? '一時停止' : '再生'}
+              {isPlaying ? '停止' : '再生'}
             </Button>
 
             {/* 速度選択 */}
-            <FormControl size="small">
+            <FormControl size="small" sx={{ minWidth: '80px' }}>
               <Select
                 value={speed}
                 onChange={async (e) => {
@@ -347,8 +355,8 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
                       maxHeight: 200,
                       '& .MuiMenuItem-root': {
                         color: 'white',
-                        fontSize: '0.875rem',
-                        padding: '8px 16px',
+                        fontSize: '0.75rem',
+                        padding: '6px 12px',
                         minHeight: 'auto',
                         '&:hover': {
                           backgroundColor: 'rgba(255,255,255,0.1)',
@@ -378,11 +386,13 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
                 }}
                 sx={{
                   color: 'white',
+                  fontSize: '0.75rem',
                   '& .MuiOutlinedInput-notchedOutline': {
                     borderColor: 'rgba(255,255,255,0.3)',
                   },
                   '& .MuiSvgIcon-root': {
                     color: 'white',
+                    fontSize: '1rem',
                   },
                   '&:hover .MuiOutlinedInput-notchedOutline': {
                     borderColor: 'rgba(255,255,255,0.5)',
@@ -392,25 +402,26 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
                   },
                 }}
               >
-                <MenuItem value={8000}>遅い (8秒)</MenuItem>
-                <MenuItem value={5000}>普通 (5秒)</MenuItem>
-                <MenuItem value={3000}>速い (3秒)</MenuItem>
-                <MenuItem value={2000}>高速 (2秒)</MenuItem>
+                <MenuItem value={8000}>8秒</MenuItem>
+                <MenuItem value={5000}>5秒</MenuItem>
+                <MenuItem value={3000}>3秒</MenuItem>
+                <MenuItem value={2000}>2秒</MenuItem>
               </Select>
             </FormControl>
 
             {/* 手動更新 */}
             <IconButton
+              size="small"
               onClick={() => performAutoRefresh()}
               disabled={isRefreshing}
-              sx={{ color: 'white' }}
+              sx={{ color: 'white', p: 1 }}
             >
-              <Refresh />
+              <Refresh sx={{ fontSize: '1.2rem' }} />
             </IconButton>
 
             {/* 終了 */}
-            <IconButton onClick={onClose} sx={{ color: 'white' }}>
-              <Close />
+            <IconButton size="small" onClick={onClose} sx={{ color: 'white', p: 1 }}>
+              <Close sx={{ fontSize: '1.2rem' }} />
             </IconButton>
           </Box>
         </Box>
@@ -422,8 +433,9 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            p: 4,
+            p: 2,
             position: 'relative',
+            minHeight: 0, // フレックスアイテムが縮小可能に
           }}
         >
           {/* 記事表示 */}
@@ -431,13 +443,18 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
             <Paper
               elevation={24}
               sx={{
-                maxWidth: 800,
+                maxWidth: { xs: '100%', sm: '600px', md: '700px', lg: '800px' },
                 width: '100%',
-                p: 5,
-                borderRadius: 4,
+                maxHeight: 'calc(100vh - 140px)', // ヘッダーとフッターを除いた高さ
+                overflow: 'hidden', // オーバーフローを隠す
+                p: { xs: 2, sm: 3 }, // 小さい画面ではパディングを減らす
+                borderRadius: 3,
                 background: 'rgba(255,255,255,0.95)',
                 backdropFilter: 'blur(10px)',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                mx: 'auto', // 中央寄せ
               }}
             >
               {currentArticle && (
@@ -447,40 +464,96 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      mb: 2,
-                      fontSize: '0.875rem',
+                      mb: 1.5,
+                      fontSize: '0.75rem',
                       color: 'text.secondary',
                     }}
                   >
-                    <Typography variant="body2">
+                    <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
                       📰 {currentArticle.feedTitle}
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>
                       {formatDate(currentArticle.publishedAt || currentArticle.createdAt)}
                     </Typography>
                   </Box>
 
-                  <Typography
-                    variant="h4"
-                    component="h1"
+                  {/* レスポンシブ画像とタイトル表示 */}
+                  <Box
                     sx={{
-                      fontWeight: 700,
-                      color: 'primary.main',
-                      mb: 2,
-                      lineHeight: 1.4,
-                      fontSize: { xs: '1.5rem', md: '1.8rem' },
+                      display: 'flex',
+                      gap: 1.5,
+                      mb: 1.5,
+                      flexDirection: { xs: 'row', sm: 'column' }, // 小さい画面では横並び、大きい画面では縦並び
+                      alignItems: { xs: 'flex-start', sm: 'stretch' },
                     }}
                   >
-                    {currentArticle.title}
-                  </Typography>
+                    {currentArticle.imageUrl && (
+                      <Box
+                        sx={{
+                          flexShrink: 0,
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                          backgroundColor: 'grey.100',
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          // 小さい画面では左側に配置、大きい画面では上部に配置
+                          width: { xs: 70, sm: '100%' },
+                          height: { xs: 50, sm: 'auto' },
+                          maxHeight: { xs: 50, sm: 200 },
+                          order: { xs: 1, sm: 2 }, // 小さい画面では先に表示
+                        }}
+                      >
+                        <img
+                          src={currentArticle.imageUrl}
+                          alt={currentArticle.title}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                          }}
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.parentElement!.style.backgroundColor = '#f5f5f5';
+                            target.parentElement!.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 0.75rem;">画像なし</div>';
+                          }}
+                        />
+                      </Box>
+                    )}
+
+                    <Typography
+                      variant="h5"
+                      component="h1"
+                      sx={{
+                        fontWeight: 600,
+                        color: 'primary.main',
+                        lineHeight: 1.3,
+                        fontSize: '1.25rem',
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: { xs: 2, sm: 3 }, // 小さい画面では2行、大きい画面では3行
+                        WebkitBoxOrient: 'vertical',
+                        flex: 1,
+                        order: { xs: 2, sm: 1 }, // 小さい画面では後に表示
+                      }}
+                    >
+                      {currentArticle.title}
+                    </Typography>
+                  </Box>
 
                   <Typography
-                    variant="body1"
+                    variant="body2"
                     sx={{
-                      fontSize: '1.1rem',
-                      lineHeight: 1.8,
+                      fontSize: { xs: '0.8rem', sm: '0.9rem' },
+                      lineHeight: 1.6,
                       color: 'text.secondary',
-                      mb: 3,
+                      mb: 2,
+                      flex: 1,
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: { xs: 4, sm: 6 }, // 小さい画面では4行、大きい画面では6行まで
+                      WebkitBoxOrient: 'vertical',
                     }}
                   >
                     {currentArticle.description}
@@ -488,6 +561,7 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
 
                   <Button
                     variant="outlined"
+                    size="small"
                     onClick={async () => {
                       try {
                         await window.electronAPI.openExternalLink(currentArticle.url);
@@ -497,8 +571,13 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
                         window.open(currentArticle.url, '_blank');
                       }
                     }}
-                    startIcon={<OpenInNew />}
-                    sx={{ fontWeight: 500 }}
+                    startIcon={<OpenInNew sx={{ fontSize: '1rem' }} />}
+                    sx={{ 
+                      fontWeight: 500,
+                      fontSize: '0.8rem',
+                      py: 0.5,
+                      alignSelf: 'flex-start',
+                    }}
                   >
                     📖 記事を読む
                   </Button>
@@ -576,31 +655,33 @@ const AutoViewer: React.FC<AutoViewerProps> = ({ open, onClose, articles }) => {
           sx={{
             background: 'rgba(0,0,0,0.3)',
             backdropFilter: 'blur(10px)',
-            p: 2,
+            px: 2,
+            py: 1,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             position: 'relative',
+            minHeight: '50px',
           }}
         >
-          <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.875rem' }}>
-            {currentIndex + 1} / {articles.length} 記事
+          <Typography sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.75rem' }}>
+            {currentIndex + 1} / {articles.length}
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
             <IconButton
               onClick={previousArticle}
-              sx={{ color: 'white' }}
+              sx={{ color: 'white', p: 1 }}
               size="small"
             >
-              <SkipPrevious />
+              <SkipPrevious sx={{ fontSize: '1.2rem' }} />
             </IconButton>
             <IconButton
               onClick={nextArticle}
-              sx={{ color: 'white' }}
+              sx={{ color: 'white', p: 1 }}
               size="small"
             >
-              <SkipNext />
+              <SkipNext sx={{ fontSize: '1.2rem' }} />
             </IconButton>
           </Box>
 

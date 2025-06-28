@@ -47,7 +47,8 @@ export const setupIpcHandlers = () => {
             article.description,
             article.content,
             article.url,
-            article.publishedAt
+            article.publishedAt,
+            article.imageUrl
           );
           importedCount++;
           
@@ -164,7 +165,8 @@ export const setupIpcHandlers = () => {
               article.description,
               article.content,
               article.url,
-              article.publishedAt
+              article.publishedAt,
+              article.imageUrl
             );
             newArticleCount++;
           } catch (error) {

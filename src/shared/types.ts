@@ -15,6 +15,7 @@ export interface Article {
   description: string;
   content: string;
   url: string;
+  imageUrl?: string;
   publishedAt: string;
   createdAt: string;
   isFavorite?: boolean;

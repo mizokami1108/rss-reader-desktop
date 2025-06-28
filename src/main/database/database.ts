@@ -28,6 +28,7 @@ export const initializeDatabase = () => {
       description TEXT,
       content TEXT,
       url TEXT NOT NULL,
+      image_url TEXT,
       published_at DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (feed_id) REFERENCES feeds (id) ON DELETE CASCADE,
@@ -57,6 +58,13 @@ export const initializeDatabase = () => {
   db.exec(createArticlesTable);
   db.exec(createFavoritesTable);
   db.exec(createSettingsTable);
+
+  // マイグレーション: 既存のarticlesテーブルにimage_urlカラムを追加
+  try {
+    db.exec('ALTER TABLE articles ADD COLUMN image_url TEXT');
+  } catch (error) {
+    // カラムが既に存在する場合はエラーを無視
+  }
 
   const insertDefaultTheme = db.prepare(`
     INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)
